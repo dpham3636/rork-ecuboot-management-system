@@ -164,7 +164,7 @@ export default function DashboardScreen() {
               <Text style={styles.title}>Dashboard</Text>
               <Text style={styles.subtitle}>Welcome back, {user?.name || 'User'}</Text>
             </View>
-            <View style={styles.headerButtons}>
+            <View style={styles.headerButtonsContainer}>
               <TouchableOpacity 
                 style={styles.logoutButton}
                 onPress={handleLogout}
@@ -174,20 +174,20 @@ export default function DashboardScreen() {
                 <Text style={styles.logoutButtonText}>Logout</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={styles.sampleDataButton}
-                onPress={handleLoadSampleData}
-                activeOpacity={0.7}
-              >
-                <Package size={18} color="#10b981" />
-                <Text style={styles.sampleDataButtonText}>Load Sample</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
                 style={styles.clearButton}
                 onPress={handleClearData}
                 activeOpacity={0.7}
               >
                 <Trash2 size={18} color="#ef4444" />
                 <Text style={styles.clearButtonText}>Clear Data</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.sampleDataButton}
+                onPress={handleLoadSampleData}
+                activeOpacity={0.7}
+              >
+                <Package size={18} color="#10b981" />
+                <Text style={styles.sampleDataButtonText}>Load Sample</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -433,10 +433,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  headerButtons: {
-    flexDirection: 'row',
+  headerButtonsContainer: {
+    flexDirection: 'column',
     gap: 8,
-    flexShrink: 1,
+    alignItems: 'flex-end',
   },
   logoutButton: {
     flexDirection: 'row',
