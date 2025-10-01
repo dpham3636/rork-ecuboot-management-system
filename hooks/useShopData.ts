@@ -45,25 +45,103 @@ export const [ShopDataProvider, useShopData] = createContextHook(() => {
           storage.getItem(STORAGE_KEYS.SERVICES),
         ]);
 
+        let migratedParts: Part[] = [];
         if (partsData) {
           const parsedParts = JSON.parse(partsData) as Part[];
-          setParts(parsedParts);
+          // Migrate existing parts to include addedAt and originalQuantity fields
+          migratedParts = parsedParts.map(part => ({
+            ...part,
+            addedAt: part.addedAt || part.createdAt || new Date().toISOString(),
+            originalQuantity: part.originalQuantity ?? part.stockQuantity
+          }));
+          setParts(migratedParts);
+          // Save migrated data back to storage
+          if (migratedParts.some(part => !part.addedAt || part.originalQuantity === undefined)) {
+            await storage.setItem(STORAGE_KEYS.PARTS, JSON.stringify(migratedParts));
+          }
         } else {
-          setParts([]);
+          // Load sample data if no data exists
+          console.log('No parts data found, loading sample data');
+          migratedParts = sampleParts;
+          setParts(sampleParts);
+          await storage.setItem(STORAGE_KEYS.PARTS, JSON.stringify(sampleParts));
         }
+        
+        // FORCE LOAD SAMPLE DATA - Remove this after testing
+        console.log('FORCE LOADING SAMPLE DATA FOR TESTING');
+        migratedParts = sampleParts;
+        setParts(sampleParts);
+        await storage.setItem(STORAGE_KEYS.PARTS, JSON.stringify(sampleParts));
         
         if (vehiclesData) {
           setVehicles(JSON.parse(vehiclesData));
         } else {
-          setVehicles([]);
+          // Load sample data if no data exists
+          console.log('No vehicles data found, loading sample data');
+          setVehicles(sampleVehicles);
+          await storage.setItem(STORAGE_KEYS.VEHICLES, JSON.stringify(sampleVehicles));
         }
+        
+        // FORCE LOAD SAMPLE DATA - Remove this after testing
+        console.log('FORCE LOADING SAMPLE VEHICLES FOR TESTING');
+        setVehicles(sampleVehicles);
+        await storage.setItem(STORAGE_KEYS.VEHICLES, JSON.stringify(sampleVehicles));
         
         if (servicesData) {
           const parsedServices = JSON.parse(servicesData) as ServiceRecord[];
-          setServices(parsedServices);
+          // Migrate ALL services to ensure parts use selling price (revenue) instead of cost
+          const migratedServices = parsedServices.map(service => {
+            if (!service.parts || service.parts.length === 0) return service;
+            
+            console.log(`Checking service ${service.id} for migration...`);
+            
+            // Migrate ALL parts in the service to use selling price
+            const migratedPartsList = service.parts.map(servicePart => {
+              // Find the most recent inventory part with the same name (case-insensitive)
+              const inventoryPart = migratedParts
+                .filter((p: Part) => p.name.toLowerCase() === servicePart.partName.toLowerCase())
+                .sort((a: Part, b: Part) => new Date(b.addedAt || b.createdAt || 0).getTime() - new Date(a.addedAt || a.createdAt || 0).getTime())[0];
+              
+              if (inventoryPart) {
+                // Always use the selling price from inventory, regardless of what was stored before
+                const correctUnitPrice = inventoryPart.price;
+                const correctTotalPrice = servicePart.quantity * correctUnitPrice;
+                
+                console.log(`Service ${service.id} - Part ${servicePart.partName}: qty=${servicePart.quantity}, old unitPrice=${servicePart.unitPrice}, new unitPrice=${correctUnitPrice}, old total=${servicePart.totalPrice}, new total=${correctTotalPrice}`);
+                
+                return {
+                  ...servicePart,
+                  unitPrice: correctUnitPrice, // Always use selling price
+                  totalPrice: correctTotalPrice
+                };
+              }
+              
+              console.log(`Service ${service.id} - Part ${servicePart.partName}: No matching inventory part found, keeping original values`);
+              return servicePart;
+            });
+            
+            return {
+              ...service,
+              parts: migratedPartsList
+            };
+          });
+          
+          setServices(migratedServices);
+          
+          // Always save the migrated services to ensure consistency
+          console.log('Saving migrated services to storage');
+          await storage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(migratedServices));
         } else {
-          setServices([]);
+          // Load sample data if no data exists
+          console.log('No services data found, loading sample data');
+          setServices(sampleServices);
+          await storage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(sampleServices));
         }
+        
+        // FORCE LOAD SAMPLE DATA - Remove this after testing
+        console.log('FORCE LOADING SAMPLE SERVICES FOR TESTING');
+        setServices(sampleServices);
+        await storage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(sampleServices));
       } catch (error) {
         console.error('Error loading shop data:', error);
       } finally {
