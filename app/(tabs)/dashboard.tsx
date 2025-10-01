@@ -436,6 +436,7 @@ const styles = StyleSheet.create({
   headerButtons: {
     flexDirection: 'row',
     gap: 8,
+    flexShrink: 1,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -468,6 +469,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#ef4444',
     fontWeight: '600',
+    flexShrink: 1,
   },
   sampleDataButton: {
     flexDirection: 'row',
